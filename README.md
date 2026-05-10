@@ -6,6 +6,14 @@ Ingests content from **Document360** and **SharePoint**, processes text, tables,
 
 ---
 
+## Live Demo
+
+![Knowledge RAG API Swagger UI](docs/images/swagger-ui.jpg)
+
+The full API is documented and testable via Swagger UI at `/docs`. All endpoints — Ingestion, Retrieval, Orchestrator, Feedback, and Debug — are live and interactive.
+
+---
+
 ## Architecture
 
 ```
@@ -110,6 +118,9 @@ knowledge-rag-api/
 │   │   └── test_retriever.py
 │   └── integration/
 │       └── test_pipeline.py
+├── docs/
+│   └── images/
+│       └── swagger-ui.jpg       # Live API screenshot
 ├── docker-compose.yml           # PostgreSQL + pgvector + MinIO
 ├── Dockerfile
 ├── requirements.txt
@@ -119,9 +130,47 @@ knowledge-rag-api/
 
 ---
 
-## Quickstart (Local Dev)
+## Quickstart
 
-### 1. Clone and configure
+### Option A — GitHub Codespaces (Recommended)
+
+The fastest way to run the full stack with zero local setup.
+
+1. Click the green **Code** button on this repo → **Codespaces** tab → **Create codespace on main**
+2. Wait ~60 seconds for the environment to load, then in the terminal:
+
+```bash
+cp .env.example .env
+# Open .env and add your OPENAI_API_KEY
+```
+
+3. Start the database and MinIO storage:
+
+```bash
+docker-compose up db minio -d
+```
+
+4. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+5. Run the API:
+
+```bash
+python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+6. Go to the **Ports** tab in VS Code → click the 🌐 globe icon next to port **8000** → add `/docs` to the URL.
+
+> **Tip:** Store your `OPENAI_API_KEY` under repo **Settings → Secrets → Codespaces** so it's injected automatically every time you open the Codespace.
+
+---
+
+### Option B — Local Dev
+
+#### 1. Clone and configure
 
 ```bash
 git clone https://github.com/HenryMorganDibie/knowledge-rag-api.git
@@ -130,23 +179,23 @@ cp .env.example .env
 # Fill in OPENAI_API_KEY and optionally Document360/SharePoint credentials
 ```
 
-### 2. Start infrastructure
+#### 2. Start infrastructure
 
 ```bash
 docker-compose up db minio -d
 ```
 
-### 3. Install dependencies
+#### 3. Install dependencies
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the API
+#### 4. Run the API
 
 ```bash
-uvicorn api.main:app --reload
+python -m uvicorn api.main:app --reload
 ```
 
 The API will be live at `http://localhost:8000/docs`
@@ -156,7 +205,7 @@ On first startup, the app automatically:
 - Creates all tables
 - Builds HNSW and GIN indexes
 
-### 5. Run tests
+#### 5. Run tests
 
 ```bash
 pytest tests/ -v
