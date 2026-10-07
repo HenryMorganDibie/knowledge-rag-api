@@ -39,7 +39,7 @@ The full API is documented and testable via Swagger UI at `/docs`. All endpoints
                     │              Retrieval Layer                 │
                     │                                              │
                     │  Vector Search (HNSW cosine) +              │
-                    │  BM25 Full-Text (tsvector/tsquery) +        │
+                    │  Full-Text (tsvector/ts_rank, BM25-style) + │
                     │  RRF Merge + ACL Filter + Cross-Encoder     │
                     └────────────────────┬────────────────────────┘
                                          │
@@ -71,7 +71,9 @@ The chunker walks the HTML DOM rather than splitting on raw character count. Eve
 Vector search and BM25 full-text search run in parallel. Results are merged using Reciprocal Rank Fusion — chunks appearing in both ranked lists get a significant boost. A cross-encoder reranker (sentence-transformers) handles final precision ordering.
 
 ### ACL Filtering
-Every chunk stores the ACL groups from its source document. The retrieval layer filters chunks at query time — a user only sees chunks their group has access to. ACL bleed (returning restricted chunks to unauthorized users) is tested explicitly.
+Every chunk stores the ACL groups from its source document. The retrieval layer filters chunks at query time and **fails closed**: a caller who supplies no groups sees public chunks only, and a caller with groups sees public chunks plus chunks sharing a group. ACL bleed is covered by unit tests (`tests/unit/test_acl.py`) and by a PostgreSQL-backed test (`tests/integration/test_acl_postgres.py`, runs when `TEST_DATABASE_URL` is set).
+
+> **Known limitation:** `acl_groups` is currently supplied in the request body, so the API trusts the caller's claimed groups. In production, derive groups from an authenticated identity (JWT/SSO claims) at the gateway and never accept them from the client.
 
 ### Presigned S3 Citation URLs
 Source documents are stored in S3. Citation endpoints return time-limited presigned URLs — callers get temporary, auth-gated access to the original document without any credentials being exposed.

@@ -33,6 +33,22 @@ def _get_reranker() -> CrossEncoder:
     return _reranker
 
 
+def _acl_clause(acl_groups: Optional[List[str]]) -> tuple[str, dict]:
+    """
+    Build the ACL predicate for chunk queries. Fails CLOSED.
+
+    - Groups supplied: chunks that are public (empty ACL) or share a group.
+    - No groups (None or empty): public chunks only. A caller that supplies
+      no identity never sees restricted content.
+    """
+    if not acl_groups:
+        return "AND acl_groups::jsonb = '[]'::jsonb", {}
+    return (
+        "AND (acl_groups::jsonb = '[]'::jsonb OR acl_groups::jsonb ?| :acl_groups)",
+        {"acl_groups": list(acl_groups)},
+    )
+
+
 @dataclass
 class RetrievedChunk:
     chunk_id: str
@@ -96,7 +112,8 @@ async def retrieve(
             "bm25_hits": len(bm25_hits),
             "after_rrf": len(merged),
             "after_rerank": len(reranked),
-            "acl_filter_applied": acl_groups is not None,
+            "acl_filter_applied": True,
+            "acl_public_only": not acl_groups,
             "top_rrf_scores": [
                 {"chunk_id": c.chunk_id, "rrf_score": round(c.rrf_score, 4)}
                 for c in merged[:10]
@@ -115,12 +132,8 @@ async def _vector_search(
     """Cosine similarity search via pgvector HNSW index."""
     embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-    acl_clause = ""
-    params: dict = {"embedding": embedding_str, "top_k": top_k}
-
-    if acl_groups:
-        acl_clause = "AND (acl_groups = '[]'::jsonb OR acl_groups ?| :acl_groups)"
-        params["acl_groups"] = acl_groups
+    acl_clause, acl_params = _acl_clause(acl_groups)
+    params: dict = {"embedding": embedding_str, "top_k": top_k, **acl_params}
 
     sql = text(f"""
         SELECT
@@ -132,10 +145,10 @@ async def _vector_search(
             chunk_type,
             acl_groups,
             metadata,
-            1 - (embedding <=> :embedding::vector) AS vector_score
+            1 - (embedding <=> CAST(:embedding AS vector)) AS vector_score
         FROM document_chunks
         WHERE 1=1 {acl_clause}
-        ORDER BY embedding <=> :embedding::vector
+        ORDER BY embedding <=> CAST(:embedding AS vector)
         LIMIT :top_k
     """)
 
@@ -164,13 +177,9 @@ async def _bm25_search(
     top_k: int,
     acl_groups: Optional[List[str]],
 ) -> List[RetrievedChunk]:
-    """Full-text BM25-style search using PostgreSQL tsvector + ts_rank."""
-    acl_clause = ""
-    params: dict = {"query": query, "top_k": top_k}
-
-    if acl_groups:
-        acl_clause = "AND (acl_groups = '[]'::jsonb OR acl_groups ?| :acl_groups)"
-        params["acl_groups"] = acl_groups
+    """Full-text search using PostgreSQL tsvector + ts_rank (BM25-style ranking, not true BM25)."""
+    acl_clause, acl_params = _acl_clause(acl_groups)
+    params: dict = {"query": query, "top_k": top_k, **acl_params}
 
     sql = text(f"""
         SELECT
