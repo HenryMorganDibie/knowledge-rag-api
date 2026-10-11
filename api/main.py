@@ -7,7 +7,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_redoc_html
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from api.middleware import HardeningMiddleware
 from api.routes import retrieval, orchestrator, feedback, debug, ingest, health, demo
@@ -54,7 +55,19 @@ app = FastAPI(
     ),
     version="1.1.0",
     lifespan=lifespan,
+    redoc_url=None,  # served below with a pinned bundle
 )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc() -> HTMLResponse:
+    # FastAPI's default "redoc@next" now resolves to an ES-module build that
+    # fails to load as a classic script; pin the stable standalone bundle.
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js",
+    )
 
 # Middleware added last runs outermost: HardeningMiddleware wraps CORS and every route.
 app.add_middleware(
