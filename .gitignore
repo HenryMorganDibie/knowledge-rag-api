@@ -14,3 +14,7 @@ node_modules/
 *.log
 htmlcov/
 .coverage
+web/dist/
+web/.env
+web/.env.local
+*.tsbuildinfo

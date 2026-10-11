@@ -20,8 +20,9 @@ _DOC_PATHS = ("/docs", "/redoc")
 _API_CSP = "default-src 'none'; frame-ancestors 'none'"
 _DOCS_CSP = (
     "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-    "img-src 'self' data: https://fastapi.tiangolo.com; frame-ancestors 'none'"
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+    "font-src 'self' data: https://fonts.gstatic.com; worker-src blob:; "
+    "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly; frame-ancestors 'none'"
 )
 
 
