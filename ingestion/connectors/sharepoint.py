@@ -4,6 +4,8 @@ Fetches files from a SharePoint site, extracts text content,
 and preserves ACL group metadata for retrieval-time filtering.
 """
 
+import time
+
 import httpx
 from typing import AsyncIterator
 from dataclasses import dataclass, field
@@ -15,7 +17,11 @@ from storage.s3_client import compute_fingerprint
 logger = get_logger(__name__)
 
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
-TOKEN_URL = f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/token"
+
+
+def token_url() -> str:
+    """Microsoft identity platform v2 token endpoint for the configured tenant."""
+    return f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/token"
 
 
 @dataclass
@@ -38,13 +44,15 @@ class SharePointConnector:
 
     def __init__(self):
         self._token: str | None = None
+        self._token_expires_at: float = 0.0
 
     async def _get_token(self) -> str:
-        if self._token:
+        # Client-credentials tokens expire (typically ~60 min); refresh with margin.
+        if self._token and time.monotonic() < self._token_expires_at - 120:
             return self._token
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
-                TOKEN_URL,
+                token_url(),
                 data={
                     "grant_type": "client_credentials",
                     "client_id": settings.AZURE_CLIENT_ID,
@@ -53,7 +61,9 @@ class SharePointConnector:
                 },
             )
             resp.raise_for_status()
-            self._token = resp.json()["access_token"]
+            body = resp.json()
+            self._token = body["access_token"]
+            self._token_expires_at = time.monotonic() + int(body.get("expires_in", 3600))
         return self._token
 
     async def _headers(self) -> dict:
@@ -65,14 +75,8 @@ class SharePointConnector:
         headers = await self._headers()
         async with httpx.AsyncClient(timeout=60) as client:
             # Get root drive items
-            resp = await client.get(
-                f"{GRAPH_BASE}/sites/{settings.SHAREPOINT_SITE_ID}/drive/root/children",
-                headers=headers,
-            )
-            resp.raise_for_status()
-            items = resp.json().get("value", [])
-
-            for item in items:
+            url = f"{GRAPH_BASE}/sites/{settings.SHAREPOINT_SITE_ID}/drive/root/children"
+            async for item in self._list_children(client, headers, url):
                 if "file" in item:
                     sp_file = await self._process_file(client, headers, item)
                     if sp_file:
@@ -84,12 +88,8 @@ class SharePointConnector:
     async def _walk_folder(
         self, client: httpx.AsyncClient, headers: dict, folder_id: str
     ) -> AsyncIterator[SharePointFile]:
-        resp = await client.get(
-            f"{GRAPH_BASE}/sites/{settings.SHAREPOINT_SITE_ID}/drive/items/{folder_id}/children",
-            headers=headers,
-        )
-        resp.raise_for_status()
-        for item in resp.json().get("value", []):
+        url = f"{GRAPH_BASE}/sites/{settings.SHAREPOINT_SITE_ID}/drive/items/{folder_id}/children"
+        async for item in self._list_children(client, headers, url):
             if "file" in item:
                 f = await self._process_file(client, headers, item)
                 if f:
@@ -97,6 +97,21 @@ class SharePointConnector:
             elif "folder" in item:
                 async for nested in self._walk_folder(client, headers, item["id"]):
                     yield nested
+
+    async def _list_children(self, client: httpx.AsyncClient, headers: dict, url: str) -> AsyncIterator[dict]:
+        """Follow @odata.nextLink so folders with more than one page are fully walked."""
+        next_url: str | None = url
+        while next_url:
+            resp = await client.get(next_url, headers=headers)
+            resp.raise_for_status()
+            body = resp.json()
+            for item in body.get("value", []):
+                yield item
+            next_url = body.get("@odata.nextLink")
+            if next_url and not next_url.startswith(GRAPH_BASE + "/"):
+                # Never follow a paging link off the Graph host (SSRF guard).
+                logger.warning("Ignoring @odata.nextLink outside the Graph API host")
+                next_url = None
 
     async def _process_file(
         self, client: httpx.AsyncClient, headers: dict, item: dict
@@ -112,6 +127,7 @@ class SharePointConnector:
             return None
 
         raw_resp = await client.get(dl_url)
+        raw_resp.raise_for_status()
         raw_bytes = raw_resp.content
 
         # Extract text

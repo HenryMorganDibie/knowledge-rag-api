@@ -1,0 +1,16 @@
+<h1>Authentication and API Keys</h1>
+<p>Every request to the Lumen Cloud REST API must be authenticated with an API key. Keys are created per workspace and are shown only once at creation time.</p>
+<h2>Creating an API key</h2>
+<p>Open Workspace Settings, select API Keys, and choose Create key. Give the key a descriptive name and select the scopes it needs. Copy the key immediately and store it in a secrets manager; Lumen Cloud stores only a hash and cannot display it again.</p>
+<h2>Sending the key</h2>
+<p>Send the key in the Authorization header using the Bearer scheme, for example Authorization: Bearer lc_live_xxx. Requests without a valid key receive HTTP 401 with error code auth_invalid_key. Never send keys in query strings, because URLs are written to proxy and server logs.</p>
+<h2>Scopes</h2>
+<table>
+<tr><th>Scope</th><th>Grants</th></tr>
+<tr><td>documents:read</td><td>List and read documents and collections</td></tr>
+<tr><td>documents:write</td><td>Create, update and delete documents</td></tr>
+<tr><td>webhooks:manage</td><td>Register and rotate webhook endpoints</td></tr>
+<tr><td>admin</td><td>Manage members, billing and SSO settings</td></tr>
+</table>
+<h2>Key rotation</h2>
+<p>Rotate keys at least every 90 days. Create the replacement key first, deploy it, then revoke the old key. A revoked key stops working within 60 seconds across all regions.</p>

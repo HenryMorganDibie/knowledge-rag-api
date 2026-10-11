@@ -1,0 +1,15 @@
+<h1>API Error Codes</h1>
+<p>Errors are returned as JSON with an error object containing a machine-readable code, a human-readable message and a request_id. Include the request_id when contacting support.</p>
+<h2>Error reference</h2>
+<table>
+<tr><th>HTTP status</th><th>Code</th><th>Meaning</th></tr>
+<tr><td>400</td><td>invalid_request</td><td>The request body failed validation</td></tr>
+<tr><td>401</td><td>auth_invalid_key</td><td>The API key is missing, malformed or revoked</td></tr>
+<tr><td>403</td><td>insufficient_scope</td><td>The key lacks the scope required for this operation</td></tr>
+<tr><td>404</td><td>not_found</td><td>The resource does not exist or is not visible to this key</td></tr>
+<tr><td>409</td><td>conflict</td><td>The resource was modified concurrently; retry with the latest version</td></tr>
+<tr><td>429</td><td>rate_limited</td><td>Too many requests; honour the Retry-After header</td></tr>
+<tr><td>503</td><td>service_unavailable</td><td>Temporary outage; retry with exponential backoff</td></tr>
+</table>
+<h2>Retrying safely</h2>
+<p>Only retry requests that failed with 409, 429 or 5xx status codes. Send an Idempotency-Key header on POST requests so a retried request is never applied twice.</p>

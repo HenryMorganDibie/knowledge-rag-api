@@ -1,0 +1,15 @@
+<h1>Rate Limits</h1>
+<p>Lumen Cloud applies rate limits per API key to protect platform stability. Limits are measured over a rolling 60-second window.</p>
+<h2>Limits by plan</h2>
+<table>
+<tr><th>Plan</th><th>Requests per minute</th><th>Burst</th></tr>
+<tr><td>Free</td><td>60</td><td>10</td></tr>
+<tr><td>Standard</td><td>100</td><td>20</td></tr>
+<tr><td>Enterprise</td><td>2,000</td><td>400</td></tr>
+</table>
+<h2>Exceeding the limit</h2>
+<p>When a key exceeds its limit the API responds with HTTP 429 Too Many Requests and error code rate_limited. The Retry-After header gives the number of seconds to wait before retrying. Clients should back off exponentially with jitter rather than retrying immediately.</p>
+<h2>Concurrency limits</h2>
+<p>In addition to the per-minute limit, each key may have at most 25 requests in flight at once. Requests above the concurrency limit receive HTTP 429 with error code concurrency_limited and should be retried after an in-flight request completes.</p>
+<h2>Monitoring usage</h2>
+<p>Every response includes X-RateLimit-Limit, X-RateLimit-Remaining and X-RateLimit-Reset headers so clients can throttle themselves before they hit the limit.</p>

@@ -11,9 +11,9 @@ from typing import List, Optional
 import openai
 
 from core.config import settings
+from core.errors import UpstreamUnavailable
 from core.logger import get_logger
-from retrieval.hybrid_retriever import retrieve, RetrievedChunk
-from storage.s3_client import generate_presigned_url
+from retrieval.hybrid_retriever import retrieve
 
 logger = get_logger(__name__)
 
@@ -80,15 +80,18 @@ async def answer(
 
     # Generate answer
     oai = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    response = await oai.chat.completions.create(
-        model=settings.LLM_MODEL,
-        max_tokens=settings.LLM_MAX_TOKENS,
-        temperature=settings.LLM_TEMPERATURE,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-    )
+    try:
+        response = await oai.chat.completions.create(
+            model=settings.LLM_MODEL,
+            max_tokens=settings.LLM_MAX_TOKENS,
+            temperature=settings.LLM_TEMPERATURE,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+        )
+    except openai.APIError as e:
+        raise UpstreamUnavailable("LLM", f"provider error ({type(e).__name__})") from e
     answer_text = response.choices[0].message.content.strip()
 
     # Build structured citation blocks

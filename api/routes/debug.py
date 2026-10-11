@@ -4,27 +4,26 @@ Shows vector scores, BM25 ranks, RRF merge, rerank scores,
 and the exact prompt sent to the LLM.
 """
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 
 from core.database import get_db
+from core.schemas import LiveQueryBase
+from core.security import rate_limit, require_service_key
 from retrieval.hybrid_retriever import retrieve
 
 router = APIRouter()
 
 
-class DebugRequest(BaseModel):
-    query: str
-    acl_groups: Optional[List[str]] = None
-    top_k: int = 5
+class DebugRequest(LiveQueryBase):
+    pass
 
 
-@router.post("/trace")
+@router.post("/trace", dependencies=[Depends(require_service_key),
+                                     Depends(rate_limit("query", "RATE_LIMIT_QUERY_PER_MINUTE"))])
 async def debug_trace(request: DebugRequest, db=Depends(get_db)):
     """
-    Full retrieval trace with all intermediate scores.
-    Use this to diagnose chunk quality, ACL issues, and ranking problems.
+    Full retrieval trace with all intermediate scores. Requires X-API-Key:
+    diagnostics expose internals, and the caller is trusted to assert acl_groups.
     """
     result = await retrieve(
         db=db,
@@ -35,6 +34,6 @@ async def debug_trace(request: DebugRequest, db=Depends(get_db)):
     )
     return {
         "query": request.query,
-        "acl_groups_applied": request.acl_groups,
+        "acl_groups_applied": request.acl_groups or [],
         "retrieval_result": result,
     }

@@ -9,6 +9,7 @@ Uses its own throwaway table; it does not touch document_chunks.
 import os
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
@@ -21,7 +22,7 @@ pytestmark = pytest.mark.skipif(not DB_URL, reason="TEST_DATABASE_URL not set")
 DIM = settings.EMBEDDING_DIM
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db():
     engine = create_async_engine(DB_URL)
     vec = "[" + ",".join(["0.1"] * DIM) + "]"

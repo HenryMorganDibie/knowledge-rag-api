@@ -1,0 +1,45 @@
+{
+  "notice": "Fictional sample content written for this demo. 'Lumen Cloud' is not a real company or product. No private or customer data.",
+  "collections": [
+    {
+      "id": "lumen-developer-docs",
+      "name": "Lumen Cloud Developer Docs",
+      "source_type": "document360",
+      "description": "Public developer documentation, structured like a Document360 knowledge base (categories > articles).",
+      "simulated_origin": "Document360 project 'Lumen Developer Portal', version v2",
+      "sample_questions": [
+        "How do I authenticate API requests?",
+        "What happens when I exceed the rate limit?",
+        "How do I verify a webhook signature?",
+        "Why does SAML login fail with a clock skew error?"
+      ],
+      "documents": [
+        {"id": "d360-authentication", "file": "authentication.html", "title": "Authentication and API Keys", "category_path": "Developer Guide > Security", "acl_groups": [], "updated_at": "2026-08-14"},
+        {"id": "d360-rate-limits", "file": "rate-limits.html", "title": "Rate Limits", "category_path": "Developer Guide > Platform Limits", "acl_groups": [], "updated_at": "2026-07-02",
+         "upstream_revision": {"file": "rate-limits.rev2.html", "change_summary": "Enterprise limit raised to 2,000 requests/minute; new 'Concurrency limits' section."}},
+        {"id": "d360-webhooks", "file": "webhooks.html", "title": "Webhooks", "category_path": "Developer Guide > Events", "acl_groups": [], "updated_at": "2026-06-21"},
+        {"id": "d360-saml-sso", "file": "saml-sso.html", "title": "Configuring SAML Single Sign-On", "category_path": "Administration > Identity", "acl_groups": [], "updated_at": "2026-09-03"},
+        {"id": "d360-error-codes", "file": "error-codes.html", "title": "API Error Codes", "category_path": "Developer Guide > Reference", "acl_groups": [], "updated_at": "2026-05-30"}
+      ]
+    },
+    {
+      "id": "lumen-it-operations",
+      "name": "Lumen IT Operations Library",
+      "source_type": "sharepoint",
+      "description": "Internal IT policies and runbooks, structured like a SharePoint document library read through Microsoft Graph.",
+      "simulated_origin": "SharePoint site 'IT Operations', library 'Shared Documents'",
+      "sample_questions": [
+        "How do I connect to the VPN from home?",
+        "What is the response time for a SEV1 incident?",
+        "What must I do if my laptop is lost?",
+        "What is the break-glass admin procedure?"
+      ],
+      "documents": [
+        {"id": "sp-remote-access-vpn", "file": "remote-access-vpn.html", "title": "Remote-Access-VPN.docx", "category_path": "Shared Documents > Network", "acl_groups": [], "updated_at": "2026-08-28"},
+        {"id": "sp-incident-response", "file": "incident-response.html", "title": "Incident-Response-Runbook.docx", "category_path": "Shared Documents > Runbooks", "acl_groups": [], "updated_at": "2026-09-12"},
+        {"id": "sp-device-policy", "file": "device-policy.html", "title": "Device-and-Encryption-Policy.pdf", "category_path": "Shared Documents > Policies", "acl_groups": [], "updated_at": "2026-04-17"},
+        {"id": "sp-break-glass", "file": "break-glass.html", "title": "Break-Glass-Admin-Access.docx", "category_path": "Shared Documents > Restricted", "acl_groups": ["it-admins"], "updated_at": "2026-09-20"}
+      ]
+    }
+  ]
+}
