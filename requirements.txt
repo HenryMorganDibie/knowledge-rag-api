@@ -25,9 +25,8 @@ pdfplumber==0.11.4
 docx2txt==0.8
 Pillow==10.4.0
 
-# ML / Reranking
-sentence-transformers==3.1.1
-torch==2.4.1
+# Optional cross-encoder reranker (torch): see requirements-rerank.txt.
+# Without it, set RERANKER_ENABLED=false.
 
 # Testing
 pytest==8.3.3
