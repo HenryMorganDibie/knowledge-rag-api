@@ -7,6 +7,7 @@ from typing import List
 import openai
 
 from core.config import settings
+from core.errors import UpstreamUnavailable
 from core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,6 +29,8 @@ async def embed_texts(texts: List[str]) -> List[List[float]]:
     """
     if not texts:
         return []
+    if not settings.OPENAI_API_KEY:
+        raise UpstreamUnavailable("Embeddings", "OPENAI_API_KEY is not configured")
 
     client = _get_client()
     all_embeddings = []
@@ -35,10 +38,13 @@ async def embed_texts(texts: List[str]) -> List[List[float]]:
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
-        response = await client.embeddings.create(
-            model=settings.EMBEDDING_MODEL,
-            input=batch,
-        )
+        try:
+            response = await client.embeddings.create(
+                model=settings.EMBEDDING_MODEL,
+                input=batch,
+            )
+        except openai.APIError as e:
+            raise UpstreamUnavailable("Embeddings", f"provider error ({type(e).__name__})") from e
         batch_embeddings = [item.embedding for item in response.data]
         all_embeddings.extend(batch_embeddings)
         logger.info(f"Embedded batch {i // batch_size + 1} ({len(batch)} texts)")

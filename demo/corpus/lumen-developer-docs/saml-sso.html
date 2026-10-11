@@ -1,0 +1,15 @@
+<h1>Configuring SAML Single Sign-On</h1>
+<p>Lumen Cloud supports SAML 2.0 single sign-on with identity providers such as Microsoft Entra ID, Okta and Google Workspace. SSO configuration requires the admin scope.</p>
+<h2>Setup steps</h2>
+<p>In Administration, open Identity and choose Configure SAML. Copy the Assertion Consumer Service URL and Entity ID into your identity provider. Then upload the identity provider metadata XML to Lumen Cloud and send a test login before enforcing SSO for all members.</p>
+<h2>Attribute mapping</h2>
+<table>
+<tr><th>Lumen attribute</th><th>SAML attribute</th><th>Required</th></tr>
+<tr><td>email</td><td>http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress</td><td>Yes</td></tr>
+<tr><td>display_name</td><td>http://schemas.microsoft.com/identity/claims/displayname</td><td>No</td></tr>
+<tr><td>groups</td><td>http://schemas.microsoft.com/ws/2008/06/identity/claims/groups</td><td>No</td></tr>
+</table>
+<h2>Just-in-time provisioning</h2>
+<p>When just-in-time provisioning is enabled, a member account is created on first successful SSO login. Group claims are mapped to Lumen roles on every login, so removing a user from a group in the identity provider removes the role at their next sign-in.</p>
+<h2>Troubleshooting</h2>
+<p>A clock skew error means the SAML assertion's NotBefore or NotOnOrAfter time is outside the allowed window of 3 minutes. Make sure the identity provider server synchronises its clock with NTP. An audience mismatch error means the Entity ID configured in the identity provider does not exactly match the one shown in Lumen Cloud.</p>

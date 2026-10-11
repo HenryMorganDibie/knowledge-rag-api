@@ -1,0 +1,15 @@
+<h1>Incident Response Runbook</h1>
+<p>This runbook defines how production incidents are declared, escalated and closed. Anyone may declare an incident; it is always better to declare and downgrade than to wait.</p>
+<h2>Severity levels</h2>
+<table>
+<tr><th>Severity</th><th>Definition</th><th>Response time</th><th>Update cadence</th></tr>
+<tr><td>SEV1</td><td>Customer-facing outage or data exposure</td><td>15 minutes, 24x7</td><td>Every 30 minutes</td></tr>
+<tr><td>SEV2</td><td>Major feature degraded for many customers</td><td>1 hour, 24x7</td><td>Every 2 hours</td></tr>
+<tr><td>SEV3</td><td>Minor degradation with a workaround</td><td>Next business day</td><td>Daily</td></tr>
+</table>
+<h2>Roles</h2>
+<p>The incident commander coordinates the response and owns decisions. The communications lead posts status page updates at the cadence for the severity. Subject matter experts investigate and report findings to the incident commander.</p>
+<h2>Escalation</h2>
+<p>Page the on-call engineer through the paging system. If there is no acknowledgement within 10 minutes, the page escalates automatically to the secondary on-call, and after 20 minutes to the engineering manager.</p>
+<h2>Post-incident review</h2>
+<p>Every SEV1 and SEV2 incident requires a blameless post-incident review within 5 business days. The review records the timeline, root cause, and action items with named owners and due dates.</p>

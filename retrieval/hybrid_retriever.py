@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sentence_transformers import CrossEncoder
 
 from core.config import settings
 from core.logger import get_logger
@@ -23,12 +22,15 @@ from ingestion.processors.embedder import embed_query
 
 logger = get_logger(__name__)
 
-_reranker: CrossEncoder | None = None
+_reranker = None
 
 
-def _get_reranker() -> CrossEncoder:
+def _get_reranker():
+    # Imported lazily: sentence-transformers pulls in torch, which is only
+    # needed when reranking is enabled.
     global _reranker
     if _reranker is None:
+        from sentence_transformers import CrossEncoder
         _reranker = CrossEncoder(settings.RERANKER_MODEL)
     return _reranker
 
@@ -96,7 +98,7 @@ async def retrieve(
 
     # 5. Rerank top candidates
     candidates = merged[:top_k * 3]  # rerank a larger pool
-    reranked = _rerank(query, candidates)
+    reranked = _rerank(query, candidates) if settings.RERANKER_ENABLED else candidates
 
     final_chunks = reranked[:top_k]
 
@@ -112,6 +114,7 @@ async def retrieve(
             "bm25_hits": len(bm25_hits),
             "after_rrf": len(merged),
             "after_rerank": len(reranked),
+            "rerank_applied": settings.RERANKER_ENABLED,
             "acl_filter_applied": True,
             "acl_public_only": not acl_groups,
             "top_rrf_scores": [
@@ -267,5 +270,5 @@ def _chunk_to_dict(chunk: RetrievedChunk) -> dict:
         "chunk_type": chunk.chunk_type,
         "vector_score": chunk.vector_score,
         "rrf_score": round(chunk.rrf_score, 4),
-        "rerank_score": round(chunk.rerank_score, 4) if chunk.rerank_score else None,
+        "rerank_score": round(chunk.rerank_score, 4) if chunk.rerank_score is not None else None,
     }

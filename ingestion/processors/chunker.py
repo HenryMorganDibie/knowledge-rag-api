@@ -56,7 +56,10 @@ class StructureAwareChunker:
         def flush_text_buffer():
             nonlocal chunk_index
             text = " ".join(current_text_buffer).strip()
-            if not text:
+            if not text or text == current_heading:
+                # A heading followed directly by a table/image has no body text;
+                # emitting it alone creates a contentless chunk that crowds retrieval.
+                current_text_buffer.clear()
                 return
             for sub_chunk in self._split_text(text):
                 chunks.append(Chunk(
