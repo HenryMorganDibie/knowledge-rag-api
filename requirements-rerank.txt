@@ -1,0 +1,4 @@
+# Optional: cross-encoder reranking for live retrieval (RERANKER_ENABLED=true).
+# Large (pulls in torch); installed by the Dockerfile, omitted on serverless hosts.
+sentence-transformers==3.1.1
+torch==2.4.1

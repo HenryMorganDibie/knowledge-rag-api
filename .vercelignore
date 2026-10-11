@@ -1,0 +1,7 @@
+web/
+tests/
+docs/
+.venv/
+**/__pycache__/
+.env
+*.log
